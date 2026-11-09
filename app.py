@@ -20,7 +20,8 @@ def calculate_rsi(close, period=14):
     gains = delta.clip(lower=0).ewm(alpha=1 / period, adjust=False).mean()
     losses = (-delta.clip(upper=0)).ewm(alpha=1 / period, adjust=False).mean()
     rs = gains / losses.replace(0, float("nan"))
-    return 100 - 100 / (1 + rs)
+    values = 100 - 100 / (1 + rs)
+    return values.mask(losses == 0, 100)
 
 with st.sidebar:
     st.header("Aandeel analyseren")
@@ -36,7 +37,10 @@ if not symbol:
 try:
     with st.spinner(f"Marktgegevens ophalen voor {symbol}…"):
         hist = load_history(symbol)
-        info = yf.Ticker(symbol).get_info()
+        try:
+            info = yf.Ticker(symbol).get_info()
+        except Exception:
+            info = {}
 except Exception as exc:
     st.error(f"De gegevens voor {symbol} konden niet worden opgehaald: {exc}")
     st.stop()
